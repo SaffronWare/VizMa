@@ -6,9 +6,9 @@ struct TestProject : public vzm::Project<TestProject>
 
 	~TestProject() {}
 
-	inline float* render_pixel(unsigned int x, unsigned int y)
+	inline Uint32 render_pixel(unsigned int x, unsigned int y)
 	{
-		return nullptr;
+		return 0xFFFFFFFF;
 
 	}
 };
