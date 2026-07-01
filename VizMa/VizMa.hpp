@@ -69,12 +69,20 @@ namespace vzm {
 			return out;
 		}
 
+		Vec4 normal_at(Vec4 pos)
+		{
+			return (Vec4(imp_this->scene(pos + Vec4(epsilon, 0.0f)), 
+				imp_this->scene(pos + Vec4(0.0f, epsilon)), 
+					imp_this->scene(pos + Vec4(0.0f, 0.0f, epsilon )),
+						imp_this->scene(pos + Vec4(0.0f, 0.0f, 0.0f, epsilon))) - Vec4(imp_this->scene(pos)))/epsilon;
+		}
+
 		Vec4 raymarch_pixel(unsigned int x, unsigned int y, Vec4& fragColor, const Vec4& window_dims, const Vec4& aspect_ratio_as_x)
 		{
 			
 			Vec4 camera_pos = Vec4(0.0f, 0.0f, -4.0f);
 
-			Vec4 uv = (Vec4(x, y) - (Vec4(0.5f) * window_dims)) / window_dims * aspect_ratio_as_x;
+			Vec4 uv = (Vec4(x, y) - (Vec4(0.5f) * window_dims)) / Vec4(window_dims.x, window_dims.y, 1.0f, 1.0f) * aspect_ratio_as_x;
 			float view_dist = 1.0f;
 			Vec4 pixel_coord = camera_pos + uv + Vec4(0.0f, 0.0f, view_dist);
 
@@ -84,22 +92,23 @@ namespace vzm {
 			Vec4 ray_dir = (pixel_coord - camera_pos).normalized();
 			Vec4 ray_pos = camera_pos;
 			
-			for (int i = 0; i <= 20; i++)
+			for (int i = 0; i <= 50; i++)
 			{
 				s_value = imp_this->scene(ray_pos);
-				if (s_value <= epsilon)
+				if (s_value <= 0.0001f)
 				{
 					hit = true;
 					break;
 				}
-
-				ray_pos += ray_dir * s_value * (1.0f - epsilon);
+				//std::cout << s_value << std::endl;
+				ray_pos += ray_dir * s_value*0.99f;
 			}
-			fragColor = Vec4(0.0f);
+			fragColor = ray_dir;
 			if (hit)
 			{
-				fragColor = ray_dir;
+				fragColor = normal_at(ray_pos);
 			}
+
 			return fragColor;
 			
 		}
@@ -109,8 +118,8 @@ namespace vzm {
 			this->window_width = window_width;
 			this->window_height = window_height;
 			this->aspect_ratio = static_cast<float>(window_width) / static_cast<float>(window_height);
-			Vec4 window_dims = Vec4(static_cast<float>(window_width), static_cast<float>(window_height));
-			Vec4 aspect_as_x = Vec4(aspect_ratio, 1.0f);
+			Vec4 window_dims = Vec4(static_cast<float>(window_width), static_cast<float>(window_height), 0.0f, 0.0f);
+			Vec4 aspect_as_x = Vec4(aspect_ratio, 1.0f, 0.0f, 0.0f);
 
 			SDL_Init(SDL_INIT_VIDEO);
 
