@@ -88,10 +88,11 @@ namespace vzm {
 		Vec4 shade(Vec4 normal)
 
 		{
-			Vec4 light_dir = Vec4(0.0f, -0.0f, 1.0f, 0.0f).normalized();
-			float v = std::fminf(0.2f,1.0f*fdot(normal, light_dir));
+			Vec4 light_dir = Vec4(.5f, -5.0f, -1.0f, 0.0f).normalized();
+
+			float v = std::fmaxf(0.2f,1.0f*fdot(normal, light_dir));
 			//return Vec4(1.0f);
-			return Vec4(v,v,v,1.0f);
+			return Vec4(v,v,v, 1.0f);
 		}
 
 		Vec4 raymarch_pixel(unsigned int x, unsigned int y, Vec4& fragColor, const Vec4& window_dims, const Vec4& aspect_ratio_as_x)
