@@ -2,9 +2,18 @@
 
 struct TestProject : public vzm::Project<TestProject>
 {
-	inline float scene(Vec3 point)
+	inline vzm::SDFValue scene(Vec3 point)
 	{
-		return (point).flength() - 0.5f;
+		vzm::SDFValue out;
+
+		out.color = Vec4(0.0f);
+		out.dist = (point).flength() - 0.5f;
+		if (out.dist <= hit_zero)
+		{
+			out.color = Vec4(1.0f);
+		}
+
+		return out;
 	}
 };
 

@@ -10,6 +10,8 @@ using ark::Vec3;
 
 // for speed when calculating normal
 constexpr float epsilon = 0.0001f;
+constexpr float hit_zero = 0.0001f;
+constexpr float max_dist = 100000.0f;
 const Vec3 epsilon_vec = Vec3(epsilon);
 const Vec3 inv_epsilon_vec = Vec3(1.0f / epsilon);
 const Vec3 epsilon_x = Vec3(epsilon, 0.0f);
@@ -22,7 +24,7 @@ namespace vzm {
 	struct SDFValue
 	{
 		Vec4 color;
-		float dist;
+		float dist = max_dist;
 	};
 
 	template <typename DerivedProject> 
@@ -79,24 +81,23 @@ namespace vzm {
 		Vec3 normal_at(Vec3 pos)
 		{
 			return ((
-				Vec3(imp_this->scene(pos + epsilon_x),
-					imp_this->scene(pos + epsilon_y),
-					imp_this->scene(pos + epsilon_z))
-				- Vec3(imp_this->scene(pos),
-					imp_this->scene(pos),
-					imp_this->scene(pos))
+				Vec3(imp_this->scene(pos + epsilon_x).dist,
+					imp_this->scene(pos + epsilon_y).dist,
+					imp_this->scene(pos + epsilon_z).dist)
+				- Vec3(imp_this->scene(pos).dist,
+					imp_this->scene(pos).dist,
+					imp_this->scene(pos).dist)
 				) * inv_epsilon_vec
 			).normalized();
 		}
 
-		Vec4 shade(Vec3 normal)
-
+		Vec4 shade(Vec4 color, Vec3 normal)
 		{
 			Vec3 light_dir = Vec3(.5f, -5.0f, -1.0f).normalized();
 
 			float v = std::fmaxf(0.2f,1.0f*fdot(normal, light_dir));
 			//return Vec4(1.0f);
-			return Vec4(v,v,v, 1.0f);
+			return color * Vec4(v,v,v, 1.0f);
 		}
 
 		Vec4 raymarch_point(Vec3 uv_point)
@@ -116,19 +117,24 @@ namespace vzm {
 			
 			for (int i = 0; i <= 50; i++)
 			{
-				s_value = imp_this->scene(ray_pos);
-				if (s_value <= 0.0001f)
+				s_value = imp_this->scene(ray_pos).dist;
+				if (s_value <= hit_zero)
 				{
 					hit = true;
+					break;
+				}
+				else if (s_value >= max_dist)
+				{
 					break;
 				}
 				//std::cout << s_value << std::endl;
 				ray_pos += ray_dir * s_value*0.99f;
 			}
 			fragColor = Vec4(ray_dir.x, ray_dir.y, ray_dir.z, 1.0f);
+			
 			if (hit)
 			{
-				fragColor = shade(normal_at(ray_pos));
+				fragColor = shade(imp_this->scene(ray_pos).color, normal_at(ray_pos));
 			}
 
 			return fragColor;
@@ -169,9 +175,9 @@ namespace vzm {
 			{
 				
 				current_frame_time = SDL_GetPerformanceCounter();
-				if (current_frame_time - last_frame_time > SDL_GetPerformanceFrequency())
+				if (current_frame_time - last_frame_time > 5 * SDL_GetPerformanceFrequency())
 				{
-					std::cout << acc_frames << " fps" << std::endl;
+					std::cout << acc_frames / 5 << " fps" << std::endl;
 					last_frame_time = current_frame_time;
 					acc_frames = 0;
 				}
@@ -194,7 +200,6 @@ namespace vzm {
 					for (int i = 0; i < static_cast<int>(window_width); i++)
 					{
 						Vec3 pixel_uv = Vec3(start_uv_x + pixel_uv_spacing * i, start_uv_y + pixel_uv_spacing * j, 0.0f);
-						;
 						buffer_position[i + pixel_pitch * j] = convert_color(raymarch_point(pixel_uv));
 						
 					}
