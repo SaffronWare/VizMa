@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "ArkMat.hpp"
+#include <omp.h>
 #include <SDL3/SDL.h>
 
 
@@ -149,10 +150,22 @@ namespace vzm {
 		
 			Uint32* buffer_position;
 			Vec4 pixel_color;
+
+			Uint64 last_frame_time = SDL_GetPerformanceCounter();
+			Uint64 current_frame_time = SDL_GetPerformanceCounter();
+			unsigned int acc_frames = 0;
 			
 			SDL_Event event;
 			while (true)
 			{
+				
+				current_frame_time = SDL_GetPerformanceCounter();
+				if (current_frame_time - last_frame_time > 1000)
+				{
+					std::cout << acc_frames << " fps" << std::endl;
+					last_frame_time = current_frame_time;
+					acc_frames = 0;
+				}
 				while (SDL_PollEvent(&event))
 				{
 					if (event.type == SDL_EVENT_QUIT)
@@ -166,7 +179,7 @@ namespace vzm {
 				Uint32* pixel_buffer = static_cast<Uint32*>(window_surface->pixels);
 
 				buffer_position = pixel_buffer;
-
+				#pragma omp parallel for
 				for (int j = 0; j < window_height; j++)
 				{
 					for (int i = 0; i < window_width; i++)
@@ -185,6 +198,7 @@ namespace vzm {
 				SDL_UpdateWindowSurface(window);
 
 				frame++;
+				acc_frames++;
 			}
 		}
 	};
