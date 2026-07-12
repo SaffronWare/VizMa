@@ -2,15 +2,19 @@
 #include "ArkMat.hpp"
 #include <omp.h>
 #include <SDL3/SDL.h>
-
-
-
 #include <iostream>
 
 using ark::Vec4;
+using ark::Vec3;
 
 
+// for speed when calculating normal
 constexpr float epsilon = 0.0001f;
+const Vec3 epsilon_vec = Vec3(epsilon);
+const Vec3 epsilon_x = Vec3(epsilon, 0.0f);
+const Vec3 epsilon_y = Vec3(0.0f, epsilon);
+const Vec3 epsilon_z = Vec3(0.0f, 0.0f, epsilon);
+
 
 namespace vzm {
 	
@@ -59,7 +63,7 @@ namespace vzm {
 			window_surface = nullptr;
 		}
 
-		Uint32 convert_color(const ark::Vec4& color)
+		Uint32 convert_color(ark::Vec4 color)
 		{
 			Uint32 out = 0;
 			
@@ -71,45 +75,43 @@ namespace vzm {
 			return out;
 		}
 
-		Vec4 normal_at(Vec4 pos)
+		Vec3 normal_at(Vec3 pos)
 		{
 			return ((
-				Vec4(imp_this->scene(pos + Vec4(epsilon, 0.0f)), 
-					imp_this->scene(pos + Vec4(0.0f, epsilon)), 
-					imp_this->scene(pos + Vec4(0.0f, 0.0f, epsilon )),
-					0.0f)
-						 - Vec4(imp_this->scene(pos), 
+				Vec3(imp_this->scene(pos + epsilon_x), 
+					imp_this->scene(pos + epsilon_y), 
+					imp_this->scene(pos + epsilon_z))
+						 - Vec3(imp_this->scene(pos), 
 							 imp_this->scene(pos), 
-							 imp_this->scene(pos),
-							 0.0f)
-				)/epsilon
+							 imp_this->scene(pos))
+				)/epsilon_vec
 			).normalized();
 		}
 
-		Vec4 shade(Vec4 normal)
+		Vec4 shade(Vec3 normal)
 
 		{
-			Vec4 light_dir = Vec4(.5f, -5.0f, -1.0f, 0.0f).normalized();
+			Vec3 light_dir = Vec3(.5f, -5.0f, -1.0f).normalized();
 
 			float v = std::fmaxf(0.2f,1.0f*fdot(normal, light_dir));
 			//return Vec4(1.0f);
 			return Vec4(v,v,v, 1.0f);
 		}
 
-		Vec4 raymarch_pixel(unsigned int x, unsigned int y, Vec4& fragColor, const Vec4& window_dims, const Vec4& aspect_ratio_as_x)
+		Vec4 raymarch_point(Vec3 uv_point)
 		{
+			Vec4 fragColor;
 			
-			Vec4 camera_pos = Vec4(0.0f, 0.0f, -4.0f);
+			static const Vec3 camera_pos = Vec3(0.0f, 0.0f, -4.0f);
+			static const float view_dist = 1.0f;
 
-			Vec4 uv = (Vec4(x, y) - (Vec4(0.5f) * window_dims)) / Vec4(window_dims.x, window_dims.y, 1.0f, 1.0f) * aspect_ratio_as_x;
-			float view_dist = 1.0f;
-			Vec4 pixel_coord = camera_pos + uv + Vec4(0.0f, 0.0f, view_dist);
+			Vec3 pixel_coord = camera_pos + uv_point + Vec3(0.0f, 0.0f, view_dist);
 
 			float f_value;
 			float s_value = 100.0f;
 			bool hit = false;
-			Vec4 ray_dir = (pixel_coord - camera_pos).normalized();
-			Vec4 ray_pos = camera_pos;
+			Vec3 ray_dir = (pixel_coord - camera_pos).normalized();
+			Vec3 ray_pos = camera_pos;
 			
 			for (int i = 0; i <= 50; i++)
 			{
@@ -122,7 +124,7 @@ namespace vzm {
 				//std::cout << s_value << std::endl;
 				ray_pos += ray_dir * s_value*0.99f;
 			}
-			fragColor = ray_dir;
+			fragColor = Vec4(ray_dir.x, ray_dir.y, ray_dir.z, 1.0f);
 			if (hit)
 			{
 				fragColor = shade(normal_at(ray_pos));
@@ -137,8 +139,17 @@ namespace vzm {
 			this->window_width = window_width;
 			this->window_height = window_height;
 			this->aspect_ratio = static_cast<float>(window_width) / static_cast<float>(window_height);
-			Vec4 window_dims = Vec4(static_cast<float>(window_width), static_cast<float>(window_height), 0.0f, 0.0f);
-			Vec4 aspect_as_x = Vec4(aspect_ratio, 1.0f, 0.0f, 0.0f);
+			
+			const float fwindow_width = static_cast<float>(this->window_width);
+			const float fwindow_height = static_cast<float> (this->window_height);
+			const float pixel_uv_spacing = 1 /fwindow_height;
+
+			// consider how 
+			const float start_uv_x = -0.5f * aspect_ratio;
+			const float start_uv_y = -0.5f;
+			
+
+
 
 			SDL_Init(SDL_INIT_VIDEO);
 
@@ -184,13 +195,11 @@ namespace vzm {
 				{
 					for (int i = 0; i < window_width; i++)
 					{
-
-						raymarch_pixel(i, j, pixel_color, window_dims, aspect_as_x);
-						buffer_position[i] = convert_color(pixel_color);
+						Vec3 pixel_uv = Vec3(start_uv_x + pixel_uv_spacing * i, start_uv_y + pixel_uv_spacing * j, 0.0f);
+						;
+						buffer_position[i + pixel_pitch * j] = convert_color(raymarch_point(pixel_uv));
 						
 					}
-
-					buffer_position += pixel_pitch;
 				}
 				
 				SDL_UnlockSurface(window_surface);

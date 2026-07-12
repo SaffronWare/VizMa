@@ -2,7 +2,7 @@
 
 struct TestProject : public vzm::Project<TestProject>
 {
-	inline float scene(Vec4 point)
+	inline float scene(Vec3 point)
 	{
 		return (point).flength() - 0.5f;
 	}
