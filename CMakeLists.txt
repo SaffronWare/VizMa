@@ -16,3 +16,8 @@ add_executable(VizMa "Main.cpp")
 target_include_directories(VizMa PRIVATE ${PROJECT_SOURCE_DIR}/ArkMat/src)
 
 target_link_libraries(VizMa PRIVATE SDL3::SDL3)
+
+find_package(OpenMP REQUIRED)
+
+# Make sure your target explicitly links it!
+target_link_libraries(VizMa PRIVATE OpenMP::OpenMP_CXX)

@@ -11,6 +11,7 @@ using ark::Vec3;
 // for speed when calculating normal
 constexpr float epsilon = 0.0001f;
 const Vec3 epsilon_vec = Vec3(epsilon);
+const Vec3 inv_epsilon_vec = Vec3(1.0f / epsilon);
 const Vec3 epsilon_x = Vec3(epsilon, 0.0f);
 const Vec3 epsilon_y = Vec3(0.0f, epsilon);
 const Vec3 epsilon_z = Vec3(0.0f, 0.0f, epsilon);
@@ -78,13 +79,13 @@ namespace vzm {
 		Vec3 normal_at(Vec3 pos)
 		{
 			return ((
-				Vec3(imp_this->scene(pos + epsilon_x), 
-					imp_this->scene(pos + epsilon_y), 
+				Vec3(imp_this->scene(pos + epsilon_x),
+					imp_this->scene(pos + epsilon_y),
 					imp_this->scene(pos + epsilon_z))
-						 - Vec3(imp_this->scene(pos), 
-							 imp_this->scene(pos), 
-							 imp_this->scene(pos))
-				)/epsilon_vec
+				- Vec3(imp_this->scene(pos),
+					imp_this->scene(pos),
+					imp_this->scene(pos))
+				) * inv_epsilon_vec
 			).normalized();
 		}
 
@@ -144,12 +145,8 @@ namespace vzm {
 			const float fwindow_height = static_cast<float> (this->window_height);
 			const float pixel_uv_spacing = 1 /fwindow_height;
 
-			// consider how 
 			const float start_uv_x = -0.5f * aspect_ratio;
 			const float start_uv_y = -0.5f;
-			
-
-
 
 			SDL_Init(SDL_INIT_VIDEO);
 
@@ -165,13 +162,14 @@ namespace vzm {
 			Uint64 last_frame_time = SDL_GetPerformanceCounter();
 			Uint64 current_frame_time = SDL_GetPerformanceCounter();
 			unsigned int acc_frames = 0;
-			
+			omp_set_num_threads(omp_get_num_procs());
+
 			SDL_Event event;
 			while (true)
 			{
 				
 				current_frame_time = SDL_GetPerformanceCounter();
-				if (current_frame_time - last_frame_time > 1000)
+				if (current_frame_time - last_frame_time > SDL_GetPerformanceFrequency())
 				{
 					std::cout << acc_frames << " fps" << std::endl;
 					last_frame_time = current_frame_time;
@@ -190,10 +188,10 @@ namespace vzm {
 				Uint32* pixel_buffer = static_cast<Uint32*>(window_surface->pixels);
 
 				buffer_position = pixel_buffer;
-				#pragma omp parallel for
-				for (int j = 0; j < window_height; j++)
+				#pragma omp parallel for schedule(dynamic, 2)
+				for (int j = 0; j < static_cast<int>(window_height); j++)
 				{
-					for (int i = 0; i < window_width; i++)
+					for (int i = 0; i < static_cast<int>(window_width); i++)
 					{
 						Vec3 pixel_uv = Vec3(start_uv_x + pixel_uv_spacing * i, start_uv_y + pixel_uv_spacing * j, 0.0f);
 						;
