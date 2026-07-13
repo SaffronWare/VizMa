@@ -7,11 +7,14 @@
 using ark::Vec4;
 using ark::Vec3;
 
+constexpr float pi = 3.14159265358979323846f;
+
 
 // for speed when calculating normal
 constexpr float epsilon = 0.0001f;
 constexpr float hit_zero = 0.0001f;
-constexpr float max_dist = 100000.0f;
+constexpr float max_dist = 1000.0f;
+constexpr int max_num_marches = 20000;
 const Vec3 epsilon_vec = Vec3(epsilon);
 const Vec3 inv_epsilon_vec = Vec3(1.0f / epsilon);
 const Vec3 epsilon_x = Vec3(epsilon, 0.0f);
@@ -110,12 +113,12 @@ namespace vzm {
 			Vec3 pixel_coord = camera_pos + uv_point + Vec3(0.0f, 0.0f, view_dist);
 
 			float f_value;
-			float s_value = 100.0f;
+			float s_value = 10.0f;
 			bool hit = false;
 			Vec3 ray_dir = (pixel_coord - camera_pos).normalized();
 			Vec3 ray_pos = camera_pos;
 			
-			for (int i = 0; i <= 50; i++)
+			for (int i = 0; i < max_num_marches; i++)
 			{
 				s_value = imp_this->scene(ray_pos).dist;
 				if (s_value <= hit_zero)
@@ -128,11 +131,14 @@ namespace vzm {
 					break;
 				}
 				//std::cout << s_value << std::endl;
-				ray_pos += ray_dir * s_value*0.99f;
+				ray_pos += ray_dir * s_value*0.2f;
 			}
-			fragColor = Vec4(ray_dir.x, ray_dir.y, ray_dir.z, 1.0f);
-			
-			if (hit)
+		
+			if (!hit)
+			{
+				fragColor = imp_this->sky(ray_dir);
+			}
+			else if (hit)
 			{
 				fragColor = shade(imp_this->scene(ray_pos).color, normal_at(ray_pos));
 			}
@@ -201,7 +207,7 @@ namespace vzm {
 					{
 						Vec3 pixel_uv = Vec3(start_uv_x + pixel_uv_spacing * i, start_uv_y + pixel_uv_spacing * j, 0.0f);
 						buffer_position[i + pixel_pitch * j] = convert_color(raymarch_point(pixel_uv));
-						
+						//buffer_position[i + pixel_pitch * j] = convert_color(Vec4(1.0f));
 					}
 				}
 				
