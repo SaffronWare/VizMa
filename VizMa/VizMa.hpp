@@ -14,12 +14,16 @@ constexpr float pi = 3.14159265358979323846f;
 constexpr float epsilon = 0.0001f;
 constexpr float hit_zero = 0.0001f;
 constexpr float max_dist = 1000.0f;
-constexpr int max_num_marches = 20000;
+constexpr int max_num_marches = 1000;
 const Vec3 epsilon_vec = Vec3(epsilon);
 const Vec3 inv_epsilon_vec = Vec3(1.0f / epsilon);
 const Vec3 epsilon_x = Vec3(epsilon, 0.0f);
 const Vec3 epsilon_y = Vec3(0.0f, epsilon);
 const Vec3 epsilon_z = Vec3(0.0f, 0.0f, epsilon);
+
+const Vec3 i = Vec3(1.0f, 0.0f);
+const Vec3 j = Vec3(0.0f, 1.0f);
+const Vec3 k = Vec3(0.0f, 0.0f, 1.0f);
 
 
 namespace vzm {
@@ -131,7 +135,7 @@ namespace vzm {
 					break;
 				}
 				//std::cout << s_value << std::endl;
-				ray_pos += ray_dir * s_value*0.2f;
+				ray_pos += ray_dir * s_value*0.99f;
 			}
 		
 			if (!hit)
@@ -206,7 +210,12 @@ namespace vzm {
 					for (int i = 0; i < static_cast<int>(window_width); i++)
 					{
 						Vec3 pixel_uv = Vec3(start_uv_x + pixel_uv_spacing * i, start_uv_y + pixel_uv_spacing * j, 0.0f);
-						buffer_position[i + pixel_pitch * j] = convert_color(raymarch_point(pixel_uv));
+						Vec4 cumsum = Vec4(0.0f);
+						for (int k = 0; k < 4; k++)
+						{
+							cumsum += raymarch_point(pixel_uv + pixel_uv + ark::v3uniform(i * 1236123 + j * 987644 + 98476 * frame) * pixel_uv_spacing);
+						}
+						buffer_position[i + pixel_pitch * j] = convert_color(cumsum / 4.0f);
 						//buffer_position[i + pixel_pitch * j] = convert_color(Vec4(1.0f));
 					}
 				}

@@ -9,7 +9,7 @@ struct TestProject : public vzm::Project<TestProject>
 	inline float PolyTerrain(Vec3 point)
 	{
 		float py = point.y;
-		point /= 4.0f;
+		point /= 10.0f;
 
 		int i = point.x;
 		int j = point.z;
@@ -17,18 +17,24 @@ struct TestProject : public vzm::Project<TestProject>
 		float xt = std::fmodf(point.x, 1.0f);
 		float zt = std::fmodf(point.z, 1.0f);
 
-		float h = 2 * std::sinf(3.0f * point.x);
+		float h = 2 * std::sinf(0.2f * point.x);
 		
 		return std::abs(py -  h - 20.0f) ;
+	}
 
-
+	inline float SineSDF(Vec3 point)
+	{
+		Vec3 val = Vec3(point.x, std::sinf(point.x) + 20.0f, point.z);
+		return std::fabsf(ark::SDFFunctionBounder(point, Vec3(1.0f, 1.0f, 1.0f), val));
 	}
 
 	inline vzm::SDFValue scene(Vec3 point)
 	{
 		vzm::SDFValue out;
+
+
 		
-		out.dist = PolyTerrain(point);
+		out.dist = SineSDF(point);
 		out.color = Vec4(1.0f);
 
 		return out;
@@ -49,7 +55,7 @@ int main()
 
 	std::cout << "Starting TestProject..." << std::endl;
 	TestProject project = TestProject();
-	project.start();
+	project.start(1000, 800);
 
 	return 0;
 }
