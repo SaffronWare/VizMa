@@ -14,7 +14,7 @@ constexpr float pi = 3.14159265358979323846f;
 constexpr float epsilon = 0.0001f;
 constexpr float hit_zero = 0.001f;
 constexpr float max_dist = 1000.0f;
-constexpr int max_num_marches = 10000;
+constexpr int max_num_marches = 100000;
 const Vec3 epsilon_vec = Vec3(epsilon);
 const Vec3 inv_epsilon_vec = Vec3(1.0f / epsilon);
 const Vec3 epsilon_x = Vec3(epsilon, 0.0f);
@@ -111,7 +111,7 @@ namespace vzm {
 		{
 			Vec4 fragColor;
 			
-			static const Vec3 camera_pos = Vec3(0.0f, 0.0f, -4.0f);
+			static const Vec3 camera_pos = Vec3(0.0f,0.0f, 4.0f);
 			static const float view_dist = 1.0f;
 
 			Vec3 pixel_coord = camera_pos + uv_point + Vec3(0.0f, 0.0f, view_dist);

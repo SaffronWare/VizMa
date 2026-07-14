@@ -8,7 +8,7 @@ struct TestProject : public vzm::Project<TestProject>
 {
 	inline unsigned int ij_seeder(float i, float j)
 	{
-		return i * 12044.0f + j * 6417.9f;
+		return i * 12044.0f + j * 6417.9f + 7.0f;
 	}
 	
 	inline float S3(float x)
@@ -19,20 +19,17 @@ struct TestProject : public vzm::Project<TestProject>
 	inline float TerrainPolyBase(Vec3 point)
 	{
 		
-		if (std::fabsf(point.y) > 1.1f)
-		{
-			return std::fabsf(point.y) - 1.0f;
-		}
+		
 
 		float i = std::floor(point.x);
 		float j = std::floor(point.z);
 		float xt = point.x - i;
 		float zt = point.z - j;
 
-		float aij = ark::uniform(ij_seeder(i,j));
-		float bij = ark::uniform(ij_seeder(i + 1, j));
-		float cij = ark::uniform(ij_seeder(i, j + 1));
-		float dij = ark::uniform(ij_seeder(i + 1, j + 1));
+		float aij = ark::uniform(-1.0f, 1.0f, ij_seeder(i,j));
+		float bij = ark::uniform(-1.0f, 1.0f, ij_seeder(i + 1, j));
+		float cij = ark::uniform(-1.0f, 1.0f, ij_seeder(i, j + 1));
+		float dij = ark::uniform(-1.0f, 1.0f, ij_seeder(i + 1, j + 1));
 
 		float d = aij + (bij - aij) * S3(xt) + (cij - aij) * S3(zt) + (aij - bij - cij + dij) * S3(xt) * S3(zt);
 		return d;
@@ -41,15 +38,15 @@ struct TestProject : public vzm::Project<TestProject>
 
 	inline float terrain(Vec3 point)
 	{
-		point.y -= 10.0f;
-		Vec3 val_at_point = point;		
-		point.y /= 10.0f;
 		
-		val_at_point.y = TerrainPolyBase(point / 10.0f);
+		Vec3 val_at_point = point;	
+		point.y -= 5.0f;
+		
+		val_at_point.y = 30.0f * TerrainPolyBase(point / 100.0f);
 
-		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 10.0f);
+		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 0.0f);
 
-		return 0.5f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
+		return 0.99f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
 	}
 
 	
