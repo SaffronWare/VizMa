@@ -12,7 +12,7 @@ constexpr float pi = 3.14159265358979323846f;
 
 // for speed when calculating normal
 constexpr float epsilon = 0.0001f;
-constexpr float hit_zero = 0.0001f;
+constexpr float hit_zero = 0.001f;
 constexpr float max_dist = 1000.0f;
 constexpr int max_num_marches = 1000;
 const Vec3 epsilon_vec = Vec3(epsilon);
@@ -135,7 +135,7 @@ namespace vzm {
 					break;
 				}
 				//std::cout << s_value << std::endl;
-				ray_pos += ray_dir * s_value*0.99f;
+				ray_pos += ray_dir * s_value*0.999f;
 			}
 		
 			if (!hit)
@@ -211,11 +211,11 @@ namespace vzm {
 					{
 						Vec3 pixel_uv = Vec3(start_uv_x + pixel_uv_spacing * i, start_uv_y + pixel_uv_spacing * j, 0.0f);
 						Vec4 cumsum = Vec4(0.0f);
-						for (int k = 0; k < 4; k++)
+						for (int k = 0; k < 1; k++)
 						{
-							cumsum += raymarch_point(pixel_uv + pixel_uv + ark::v3uniform(i * 1236123 + j * 987644 + 98476 * frame) * pixel_uv_spacing);
+							cumsum += raymarch_point(pixel_uv + ark::v3uniform(i * 1236123 + j * 987644 + 98476 * frame) * pixel_uv_spacing);
 						}
-						buffer_position[i + pixel_pitch * j] = convert_color(cumsum / 4.0f);
+						buffer_position[i + pixel_pitch * j] = convert_color(cumsum);
 						//buffer_position[i + pixel_pitch * j] = convert_color(Vec4(1.0f));
 					}
 				}

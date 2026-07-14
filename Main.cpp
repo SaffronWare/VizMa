@@ -6,35 +6,58 @@
 
 struct TestProject : public vzm::Project<TestProject>
 {
-	inline float PolyTerrain(Vec3 point)
+	inline unsigned int ij_seeder(float i, float j)
 	{
-		float py = point.y;
-		point /= 10.0f;
+		return i * 120398124.0f + j * 6483947.9f;
+	}
+	
+	inline float S3(float x)
+	{
+		return 3.0f * x * x - 2.0f * x * x * x;
+	}
 
-		int i = point.x;
-		int j = point.z;
-
-		float xt = std::fmodf(point.x, 1.0f);
-		float zt = std::fmodf(point.z, 1.0f);
-
-		float h = 2 * std::sinf(0.2f * point.x);
+	inline float TerrainPolyBase(Vec3 point)
+	{
 		
-		return std::abs(py -  h - 20.0f) ;
+		if (std::fabsf(point.y) > 1.1f)
+		{
+			return std::fabsf(point.y) - 1.0f;
+		}
+
+		float i = std::floor(point.x);
+		float j = std::floor(point.z);
+		float xt = point.x - i;
+		float zt = point.z - j;
+
+		float aij = ark::uniform(ij_seeder(i,j));
+		float bij = ark::uniform(ij_seeder(i + 1, j));
+		float cij = ark::uniform(ij_seeder(i, j + 1));
+		float dij = ark::uniform(ij_seeder(i + 1, j + 1));
+
+		float d = aij + (bij - aij) * S3(xt) + (cij - aij) * S3(zt) + (aij - bij - cij + dij) * S3(xt) * S3(zt);
+		return d;
+
 	}
 
-	inline float SineSDF(Vec3 point)
+	inline float terrain(Vec3 point)
 	{
-		Vec3 val = Vec3(point.x, std::sinf(point.x) + 20.0f, point.z);
-		return std::fabsf(ark::SDFFunctionBounder(point, Vec3(1.0f, 1.0f, 1.0f), val));
+		
+		Vec3 val_at_point = point;
+		point.y -= 5;
+		val_at_point.y = TerrainPolyBase(point);
+
+		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 10.0f);
+
+		return 0.5f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
 	}
 
+	
 	inline vzm::SDFValue scene(Vec3 point)
 	{
 		vzm::SDFValue out;
 
 
-		
-		out.dist = SineSDF(point);
+		out.dist = terrain(point);
 		out.color = Vec4(1.0f);
 
 		return out;
