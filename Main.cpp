@@ -42,11 +42,15 @@ struct TestProject : public vzm::Project<TestProject>
 		Vec3 val_at_point = point;	
 		point.y -= 5.0f;
 		
-		val_at_point.y = 30.0f * TerrainPolyBase(point / 100.0f);
+		val_at_point.y = 0.0f;
+		for (int i = 0; i < 4; i++)
+		{
+			val_at_point.y += 30.0f * std::exp2f(-2.5f*i) * TerrainPolyBase(rotateY(point, i) * std::exp2f(2*i) / 100.0f);
+		}
 
-		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 0.0f);
+		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 30.0f);
 
-		return 0.99f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
+		return 0.2f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
 	}
 
 	
