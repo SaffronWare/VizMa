@@ -8,7 +8,7 @@ struct TestProject : public vzm::Project<TestProject>
 {
 	inline unsigned int ij_seeder(float i, float j)
 	{
-		return i * 120398124.0f + j * 6483947.9f;
+		return i * 12044.0f + j * 6417.9f;
 	}
 	
 	inline float S3(float x)
@@ -41,15 +41,18 @@ struct TestProject : public vzm::Project<TestProject>
 
 	inline float terrain(Vec3 point)
 	{
+		point.y -= 10.0f;
+		Vec3 val_at_point = point;		
+		point.y /= 10.0f;
 		
-		Vec3 val_at_point = point;
-		point.y -= 5;
-		val_at_point.y = TerrainPolyBase(point);
+		val_at_point.y = TerrainPolyBase(point / 10.0f);
 
 		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 10.0f);
 
 		return 0.5f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
 	}
+
+	
 
 	
 	inline vzm::SDFValue scene(Vec3 point)
