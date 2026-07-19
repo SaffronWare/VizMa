@@ -83,11 +83,12 @@ struct TestProject : public vzm::Project<TestProject>
 
 	
 
-	inline Vec4 postproc(Vec4 col, bool hit, float dist)
+	inline Vec4 postproc(Vec4 col, Vec3 ray_dir, bool hit, float dist)
 	{
-		
-		float e = hit ?  std::expf(-dist / 500.0f) :  1.0f;
+		float e = 1.0f;
+		e = hit ? std::expf(-dist / 500.0f) : std::powf(std::fabsf(ray_dir.y), 0.5f);
 		return (col - Vec4(1)) * e + Vec4(1);
+		
 	}
 };
 

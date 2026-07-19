@@ -173,7 +173,7 @@ namespace vzm {
 				//fragColor = Vec4(0.5f) + Vec4(n.x, n.y, n.z, 1.0f) * 0.5f;
 			}
 
-			return imp_this->postproc(fragColor, hit, d);
+			return imp_this->postproc(fragColor, ray_dir, hit, d);
 			
 		}
 
