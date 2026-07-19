@@ -38,6 +38,17 @@ struct TestProject : public vzm::Project<TestProject>
 
 	}
 
+	inline float terrainY(Vec3 point, float amp, int l)
+	{
+		float out = 0.0f;
+		amp /= 2.0f;
+		for (int i = 0; i < l; i++)
+		{
+			out += amp * std::exp2f(-1.0f * i) * TerrainPolyBase(rotateY(point, i) * std::exp2f(i) / 100.0f, i);
+		}
+		return out;
+	}
+
 	inline float terrain(Vec3 point)
 	{
 		point.x += 14.0f;
@@ -48,10 +59,7 @@ struct TestProject : public vzm::Project<TestProject>
 		
 		
 		val_at_point.y = 0.0f;
-		for (int i = 0; i < 17; i++)
-		{
-			val_at_point.y += 20.0f * std::exp2f(-1.0f*i) * TerrainPolyBase(rotateY(point, i) * std::exp2f(i) / 100.0f, i);
-		}
+		val_at_point.y += terrainY(point,40.0f, 17);
 
 		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 5.0f).normalized();
 
@@ -72,21 +80,36 @@ struct TestProject : public vzm::Project<TestProject>
 		return out;
 	}
 
-	inline Vec4 sky(Vec3 ray_dir)
+	inline Vec4 sky(Vec3 ray_dir, Vec3 camera_origin)
 	{
 		static Vec4 low_sky_color = Vec4(0.3f, 0.6f, 1.0f, 1.0f);
 		static Vec4 high_sky_color = Vec4(0.6f, 0.8f, 1.0f, 1.0f);
 
+		static float sky_level = 1000.0f;
+		
+		// find where ray hits sky in xz
+		float t = (sky_level - camera_origin.y)/ray_dir.y;
+		Vec3 ahit = camera_origin + ray_dir * t;
+		ahit -= Vec3(100.0f, 200.0f, 0.0f);
+		float cloud_val = (terrainY(ahit * 0.025f, 1.0f, 5) + 1.0f) / 2.0f;
+		cloud_val = std::powf(cloud_val, 3.0f) *2.2f;
+		//return Vec4(cloud_val, cloud_val, cloud_val, 1.0f);
+
+
+		
 		float t0 = std::asin(ray_dir.y) / (2.0f * pi);
-		return ark::blend(low_sky_color, high_sky_color, -10 * t0);
+		Vec4 defsky = ark::blend(low_sky_color, high_sky_color, -10 * t0);
+		defsky = low_sky_color;
+		return ark::blend(defsky, Vec4(1.0f), cloud_val);
 	}
 
 	
 
-	inline Vec4 postproc(Vec4 col, Vec3 ray_dir, bool hit, float dist)
+	inline Vec4 postproc(Vec4 col, Vec3 origin, Vec3 ray_dir, bool hit, float dist)
 	{
+		//return col;
 		float e = 1.0f;
-		e = hit ? std::expf(-dist / 500.0f) : std::powf(std::fabsf(ray_dir.y), 0.5f);
+		e = hit ? std::expf(-dist / 500.0f) : std::powf(std::fabsf(ray_dir.y), 0.35f);
 		return (col - Vec4(1)) * e + Vec4(1);
 		
 	}

@@ -164,7 +164,7 @@ namespace vzm {
 		
 			if (!hit)
 			{
-				fragColor = imp_this->sky(ray_dir);
+				fragColor = imp_this->sky(ray_dir, camera_pos);
 			}
 			else if (hit)
 			{
@@ -173,7 +173,7 @@ namespace vzm {
 				//fragColor = Vec4(0.5f) + Vec4(n.x, n.y, n.z, 1.0f) * 0.5f;
 			}
 
-			return imp_this->postproc(fragColor, ray_dir, hit, d);
+			return imp_this->postproc(fragColor, camera_pos, ray_dir, hit, d);
 			
 		}
 
