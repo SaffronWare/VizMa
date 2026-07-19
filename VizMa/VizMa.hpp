@@ -11,7 +11,7 @@ constexpr float pi = 3.14159265358979323846f;
 
 
 // for speed when calculating normal
-constexpr float epsilon = 0.0001f;
+constexpr float epsilon = 0.0005f;
 constexpr float hit_zero = 0.001f;
 constexpr float max_dist = 1000.0f;
 constexpr int max_num_marches = 100000;
@@ -85,9 +85,9 @@ namespace vzm {
 			return out;
 		}
 
-		Vec3 normal_at(Vec3 pos)
+		Vec3 normal_at(Vec3 pos, Vec3 ray_dir)
 		{
-			return ((
+			Vec3 out =  ((
 				Vec3(imp_this->scene(pos + epsilon_x).dist,
 					imp_this->scene(pos + epsilon_y).dist,
 					imp_this->scene(pos + epsilon_z).dist)
@@ -96,15 +96,49 @@ namespace vzm {
 					imp_this->scene(pos).dist)
 				) * inv_epsilon_vec
 			).normalized();
+
+			return ark::fdot(ray_dir, out) < 0.0f ? out : out * -1.0f;
 		}
 
-		Vec4 shade(Vec4 color, Vec3 normal)
+		Vec4 shade(Vec4 color, Vec3 normal, Vec3 point)
 		{
-			Vec3 light_dir = Vec3(.5f, -5.0f, -1.0f).normalized();
+			Vec3 light_dir = Vec3(-4.5f, -5.0f, -1.0f).normalized();
 
-			float v = std::fmaxf(0.2f,1.0f*fdot(normal, light_dir));
+			static const float ambient = 0.2f;
+			
+			if (raymarch_ray(point - normal * 0.01f, light_dir) <= -1.0f)
+			{
+				return color * Vec4(ambient, ambient, ambient, 1.0f);
+			}
+
+			float v = std::fmaxf(ambient,1.0f*fdot(normal, light_dir));
 			//return Vec4(1.0f);
 			return color * Vec4(v,v,v, 1.0f);
+		}
+
+		float raymarch_ray(Vec3 ray_pos, Vec3 ray_dir)
+		{
+			bool hit = false;
+			float acc = 0.0f;
+			float s_value;
+
+			for (int i = 0; i < max_num_marches; i++)
+			{
+				s_value = imp_this->scene(ray_pos).dist;
+				if (s_value <= hit_zero)
+				{
+					hit = true;
+					break;
+				}
+				else if (s_value >= max_dist)
+				{
+					break;
+				}
+				//std::cout << s_value << std::endl;
+				acc += s_value * 0.999f;
+				ray_pos += ray_dir * s_value * 0.999f;
+			}
+			return hit ? acc : -1.0f;
 		}
 
 		Vec4 raymarch_point(Vec3 uv_point)
@@ -122,21 +156,10 @@ namespace vzm {
 			Vec3 ray_dir = (pixel_coord - camera_pos).normalized();
 			Vec3 ray_pos = camera_pos;
 			
-			for (int i = 0; i < max_num_marches; i++)
-			{
-				s_value = imp_this->scene(ray_pos).dist;
-				if (s_value <= hit_zero)
-				{
-					hit = true;
-					break;
-				}
-				else if (s_value >= max_dist)
-				{
-					break;
-				}
-				//std::cout << s_value << std::endl;
-				ray_pos += ray_dir * s_value*0.999f;
-			}
+			float d = raymarch_ray(ray_pos, ray_dir);
+			hit = d > -1.0f;
+			ray_pos += ray_dir * d;
+
 		
 			if (!hit)
 			{
@@ -144,7 +167,9 @@ namespace vzm {
 			}
 			else if (hit)
 			{
-				fragColor = shade(imp_this->scene(ray_pos).color, normal_at(ray_pos));
+				fragColor = shade(imp_this->scene(ray_pos).color, normal_at(ray_pos, ray_dir), ray_pos);
+				Vec3 n = normal_at(ray_pos, ray_dir);
+				//fragColor = Vec4(0.5f) + Vec4(n.x, n.y, n.z, 1.0f) * 0.5f;
 			}
 
 			return fragColor;
@@ -204,20 +229,20 @@ namespace vzm {
 				Uint32* pixel_buffer = static_cast<Uint32*>(window_surface->pixels);
 
 				buffer_position = pixel_buffer;
-				#pragma omp parallel for schedule(dynamic, 2)
-				for (int j = 0; j < static_cast<int>(window_height); j++)
-				{
-					for (int i = 0; i < static_cast<int>(window_width); i++)
+				#pragma omp parallel for schedule(dynamic, 64)
+				for (int index = 0; index < static_cast<int>(window_width * window_height); index++)
+				{ 
+					int i = index % window_width;
+					int j = (index - i)/window_width;
+				
+					Vec3 pixel_uv = Vec3(start_uv_x + pixel_uv_spacing * i, start_uv_y + pixel_uv_spacing * j, 0.0f);
+					Vec4 cumsum = Vec4(0.0f);
+					for (int k = 0; k < 1; k++)
 					{
-						Vec3 pixel_uv = Vec3(start_uv_x + pixel_uv_spacing * i, start_uv_y + pixel_uv_spacing * j, 0.0f);
-						Vec4 cumsum = Vec4(0.0f);
-						for (int k = 0; k < 1; k++)
-						{
-							cumsum += raymarch_point(pixel_uv + ark::v3uniform(i * 1236123 + j * 987644 + 98476 * frame) * pixel_uv_spacing);
-						}
-						buffer_position[i + pixel_pitch * j] = convert_color(cumsum);
-						//buffer_position[i + pixel_pitch * j] = convert_color(Vec4(1.0f));
+						cumsum += raymarch_point(pixel_uv + ark::v3uniform(i * 1236123 + j * 987644 + 98476 * frame) * pixel_uv_spacing);
 					}
+					buffer_position[i + pixel_pitch * j] = convert_color(cumsum);						//buffer_position[i + pixel_pitch * j] = convert_color(Vec4(1.0f));
+					
 				}
 				
 				SDL_UnlockSurface(window_surface);

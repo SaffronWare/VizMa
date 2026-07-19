@@ -6,9 +6,9 @@
 
 struct TestProject : public vzm::Project<TestProject>
 {
-	inline unsigned int ij_seeder(float i, float j)
+	inline unsigned int ij_seeder(float i, float j, unsigned int seed = 0)
 	{
-		return i * 12044.0f + j * 6417.9f + 7.0f;
+		return i * 12044.0f + j * 6417.9f + 7.0f + 9741458.0f * seed;
 	}
 	
 	inline float S3(float x)
@@ -16,7 +16,7 @@ struct TestProject : public vzm::Project<TestProject>
 		return 3.0f * x * x - 2.0f * x * x * x;
 	}
 
-	inline float TerrainPolyBase(Vec3 point)
+	inline float TerrainPolyBase(Vec3 point, unsigned int seed = 0)
 	{
 		
 		
@@ -26,10 +26,10 @@ struct TestProject : public vzm::Project<TestProject>
 		float xt = point.x - i;
 		float zt = point.z - j;
 
-		float aij = ark::uniform(-1.0f, 1.0f, ij_seeder(i,j));
-		float bij = ark::uniform(-1.0f, 1.0f, ij_seeder(i + 1, j));
-		float cij = ark::uniform(-1.0f, 1.0f, ij_seeder(i, j + 1));
-		float dij = ark::uniform(-1.0f, 1.0f, ij_seeder(i + 1, j + 1));
+		float aij = ark::uniform(-1.0f, 1.0f, ij_seeder(i,j, seed));
+		float bij = ark::uniform(-1.0f, 1.0f, ij_seeder(i + 1, j, seed));
+		float cij = ark::uniform(-1.0f, 1.0f, ij_seeder(i, j + 1, seed));
+		float dij = ark::uniform(-1.0f, 1.0f, ij_seeder(i + 1, j + 1, seed));
 
 		float d = aij + (bij - aij) * S3(xt) + (cij - aij) * S3(zt) + (aij - bij - cij + dij) * S3(xt) * S3(zt);
 		return d;
@@ -40,15 +40,15 @@ struct TestProject : public vzm::Project<TestProject>
 	{
 		
 		Vec3 val_at_point = point;	
-		point.y -= 5.0f;
+		//val_at_point.y = 0.0f;
 		
 		val_at_point.y = 0.0f;
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 8; i++)
 		{
-			val_at_point.y += 30.0f * std::exp2f(-2.5f*i) * TerrainPolyBase(rotateY(point, i) * std::exp2f(2*i) / 100.0f);
+			val_at_point.y += 20.0f * std::exp2f(-1.0f*i) * TerrainPolyBase(rotateY(point, i) * std::exp2f(i) / 100.0f, i);
 		}
 
-		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 30.0f);
+		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 5.0f).normalized();
 
 		return 0.2f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
 	}
@@ -60,9 +60,9 @@ struct TestProject : public vzm::Project<TestProject>
 	{
 		vzm::SDFValue out;
 
-
+		point.y -= 0.0f;
 		out.dist = terrain(point);
-		out.color = Vec4(1.0f);
+		out.color = Vec4(0.6f, 1.0f, 0.3f, 1.0f);
 
 		return out;
 	}
