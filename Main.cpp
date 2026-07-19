@@ -10,6 +10,8 @@ struct TestProject : public vzm::Project<TestProject>
 	{
 		return i * 12044.0f + j * 6417.9f + 7.0f + 9741458.0f * seed;
 	}
+
+	
 	
 	inline float S3(float x)
 	{
@@ -38,12 +40,15 @@ struct TestProject : public vzm::Project<TestProject>
 
 	inline float terrain(Vec3 point)
 	{
+		point.x += 14.0f;
+		point.y += 5.0f;
 		
 		Vec3 val_at_point = point;	
-		//val_at_point.y = 0.0f;
+		
+		
 		
 		val_at_point.y = 0.0f;
-		for (int i = 0; i < 8; i++)
+		for (int i = 0; i < 17; i++)
 		{
 			val_at_point.y += 20.0f * std::exp2f(-1.0f*i) * TerrainPolyBase(rotateY(point, i) * std::exp2f(i) / 100.0f, i);
 		}
@@ -62,7 +67,7 @@ struct TestProject : public vzm::Project<TestProject>
 
 		point.y -= 0.0f;
 		out.dist = terrain(point);
-		out.color = Vec4(0.6f, 1.0f, 0.3f, 1.0f);
+		out.color = Vec4(0.5f, 0.38f, 0.36f, 1.0f);
 
 		return out;
 	}
@@ -75,6 +80,15 @@ struct TestProject : public vzm::Project<TestProject>
 		float t0 = std::asin(ray_dir.y) / (2.0f * pi);
 		return ark::blend(low_sky_color, high_sky_color, -10 * t0);
 	}
+
+	
+
+	inline Vec4 postproc(Vec4 col, bool hit, float dist)
+	{
+		
+		float e = hit ?  std::expf(-dist / 500.0f) :  1.0f;
+		return (col - Vec4(1)) * e + Vec4(1);
+	}
 };
 
 int main()
@@ -82,7 +96,8 @@ int main()
 
 	std::cout << "Starting TestProject..." << std::endl;
 	TestProject project = TestProject();
-	project.start(1000, 800);
+	float scale = 1.5f;
+	project.start(1000 * scale, 800 * scale);
 
 	return 0;
 }

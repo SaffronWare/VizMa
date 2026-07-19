@@ -100,9 +100,10 @@ namespace vzm {
 			return ark::fdot(ray_dir, out) < 0.0f ? out : out * -1.0f;
 		}
 
+
 		Vec4 shade(Vec4 color, Vec3 normal, Vec3 point)
 		{
-			Vec3 light_dir = Vec3(-4.5f, -5.0f, -1.0f).normalized();
+			Vec3 light_dir = Vec3(-4.5f, -5.0f, +4.0f).normalized();
 
 			static const float ambient = 0.2f;
 			
@@ -172,7 +173,7 @@ namespace vzm {
 				//fragColor = Vec4(0.5f) + Vec4(n.x, n.y, n.z, 1.0f) * 0.5f;
 			}
 
-			return fragColor;
+			return imp_this->postproc(fragColor, hit, d);
 			
 		}
 
@@ -251,6 +252,18 @@ namespace vzm {
 
 				frame++;
 				acc_frames++;
+
+				while (true)
+				{
+					while (SDL_PollEvent(&event))
+					{
+						if (event.type == SDL_EVENT_QUIT)
+						{
+							return;
+						}
+					}
+				}
+
 			}
 		}
 	};
