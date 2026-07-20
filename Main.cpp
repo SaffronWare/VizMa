@@ -2,8 +2,6 @@
 #include <cmath>
 
 
-
-
 struct TestProject : public vzm::Project<TestProject>
 {
 	inline unsigned int ij_seeder(float i, float j, unsigned int seed = 0)
@@ -54,9 +52,10 @@ struct TestProject : public vzm::Project<TestProject>
 		point.x += 14.0f;
 		point.y += 5.0f;
 		
+		
 		Vec3 val_at_point = point;	
 		val_at_point.y = 0.0f;
-		val_at_point.y += terrainY(point, 40.0f, det);
+		val_at_point.y += terrainY(point, 40.0f, std::fmaxf(det/2,det -0.08f * (camera_pos - point).flength()));
 		
 
 		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 5.0f).normalized();
@@ -66,9 +65,9 @@ struct TestProject : public vzm::Project<TestProject>
 
 	inline Vec3 terrainNormal(Vec3 point)
 	{
-		static const float off = 0.0001f;
+		static const float off = 0.001f;
 		static const float offm = 1 / off;
-		float tp = terrain(point, 2);
+		float tp = terrain(point, 3);
 		return Vec3(
 			terrain(point + Vec3(off, 0.0f, 0.0f), 2) - tp,
 			terrain(point + Vec3(0.0f, off, 0.0f), 2) - tp,
@@ -82,18 +81,41 @@ struct TestProject : public vzm::Project<TestProject>
 	
 	inline vzm::SDFValue scene(Vec3 point)
 	{
+		
+
 		vzm::SDFValue out;
 
 		point.y -= 0.0f;
 		out.dist = terrain(point);
 		// based on normal's y comp, the higher it is, blend into this.
 	
-		float blending = std::fabsf(terrainNormal(point).y);
-		blending *= blending;
-		//blending *= blending;
-		static Vec4 muddy_hill = Vec4(0.5f, 0.38f, 0.36f, 1.0f);
-		static Vec4 grassy_hill = Vec4(0.4f, 0.98f, 0.6f, 1.0f);
-		out.color = ark::blend(grassy_hill, muddy_hill, blending);
+		if (out.dist <= 2.0f * hit_zero)
+		{
+			float blending = std::fabsf(terrainNormal(point).y);
+			// let me think. If y high -> green
+			// if y sort of low -> brown...
+			// Pondering... 
+			//
+			blending*= blending;
+			blending *= blending;
+			blending *= blending;
+			blending *= blending;
+
+			blending *= blending;
+			blending *= blending;
+			blending *= blending;
+			blending *= blending;
+
+			blending *= blending;
+			blending *= blending;
+	
+	
+
+
+			static Vec4 muddy_hill = Vec4(0.4f, 0.32f, 0.25f, 1.0f);
+			static Vec4 grassy_hill = Vec4(0.2f, 0.5f, 0.1f, 1.0f);
+			out.color = ark::blend(muddy_hill, grassy_hill, blending);
+		}
 
 
 		return out;
