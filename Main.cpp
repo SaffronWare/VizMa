@@ -55,16 +55,18 @@ struct TestProject : public vzm::Project<TestProject>
 		point.y += 5.0f;
 		
 		Vec3 val_at_point = point;	
-		
-		
-		
 		val_at_point.y = 0.0f;
-		val_at_point.y += terrainY(point,40.0f, 17);
+
+		val_at_point.y += terrainY(point, 40.0f, 1);
+		
 
 		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 5.0f).normalized();
 
 		return 0.2f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
 	}
+
+	
+
 
 	
 
@@ -75,7 +77,13 @@ struct TestProject : public vzm::Project<TestProject>
 
 		point.y -= 0.0f;
 		out.dist = terrain(point);
-		out.color = Vec4(0.5f, 0.38f, 0.36f, 1.0f);
+		// based on normal's y comp, the higher it is, blend into this.
+	
+		float blending = 1.0f;
+		static Vec4 muddy_hill = Vec4(0.5f, 0.38f, 0.36f, 1.0f);
+		static Vec4 grassy_hill = Vec4(0.4f, 0.98f, 0.6f, 1.0f);
+		out.color = ark::blend(grassy_hill, muddy_hill, blending);
+		
 
 		return out;
 	}
@@ -92,7 +100,7 @@ struct TestProject : public vzm::Project<TestProject>
 		Vec3 ahit = camera_origin + ray_dir * t;
 		ahit -= Vec3(100.0f, 200.0f, 0.0f);
 		float cloud_val = (terrainY(ahit * 0.025f, 1.0f, 5) + 1.0f) / 2.0f;
-		cloud_val = std::powf(cloud_val, 3.0f) *2.2f;
+		cloud_val = std::powf(cloud_val, 5.0f) *2.2f;
 		//return Vec4(cloud_val, cloud_val, cloud_val, 1.0f);
 
 

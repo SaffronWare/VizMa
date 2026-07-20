@@ -224,7 +224,7 @@ namespace vzm {
 						return;
 					}
 				}
-
+				
 				SDL_LockSurface(window_surface);
 
 				Uint32* pixel_buffer = static_cast<Uint32*>(window_surface->pixels);
