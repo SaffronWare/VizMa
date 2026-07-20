@@ -49,15 +49,14 @@ struct TestProject : public vzm::Project<TestProject>
 		return out;
 	}
 
-	inline float terrain(Vec3 point)
+	inline float terrain(Vec3 point, int det = 16)
 	{
 		point.x += 14.0f;
 		point.y += 5.0f;
 		
 		Vec3 val_at_point = point;	
 		val_at_point.y = 0.0f;
-
-		val_at_point.y += terrainY(point, 40.0f, 1);
+		val_at_point.y += terrainY(point, 40.0f, det);
 		
 
 		static Vec3 max_gradient_normal = Vec3(1.0f, 1.0f, 5.0f).normalized();
@@ -65,7 +64,17 @@ struct TestProject : public vzm::Project<TestProject>
 		return 0.2f * ark::SDFFunctionBounder(point, max_gradient_normal, val_at_point);
 	}
 
-	
+	inline Vec3 terrainNormal(Vec3 point)
+	{
+		static const float off = 0.0001f;
+		static const float offm = 1 / off;
+		float tp = terrain(point, 2);
+		return Vec3(
+			terrain(point + Vec3(off, 0.0f, 0.0f), 2) - tp,
+			terrain(point + Vec3(0.0f, off, 0.0f), 2) - tp,
+			terrain(point + Vec3(0.0f, 0.0f, off), 2) - tp
+		).normalized();
+	}
 
 
 	
@@ -79,11 +88,13 @@ struct TestProject : public vzm::Project<TestProject>
 		out.dist = terrain(point);
 		// based on normal's y comp, the higher it is, blend into this.
 	
-		float blending = 1.0f;
+		float blending = std::fabsf(terrainNormal(point).y);
+		blending *= blending;
+		//blending *= blending;
 		static Vec4 muddy_hill = Vec4(0.5f, 0.38f, 0.36f, 1.0f);
 		static Vec4 grassy_hill = Vec4(0.4f, 0.98f, 0.6f, 1.0f);
 		out.color = ark::blend(grassy_hill, muddy_hill, blending);
-		
+
 
 		return out;
 	}
